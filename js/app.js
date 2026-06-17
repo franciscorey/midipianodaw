@@ -78,17 +78,20 @@ document.addEventListener('DOMContentLoaded', async () => {
  * Pinta visualmente qué columna se está reproduciendo en tiempo real
  */
 function movePlayheadUI(activeColumn, totalColumns) {
-    // Buscamos todas las celdas de la grilla
-    const allCells = document.querySelectorAll('.grid-cell');
+    let playhead = document.getElementById('piano-playhead');
+    const gridTimeline = document.getElementById('grid-timeline');
     
-    allCells.forEach(cell => {
-        const cellCol = parseInt(cell.dataset.col);
-        
-        // Si la celda pertenece a la columna actual, le añadimos una clase de iluminación de tracking
-        if (cellCol === activeColumn) {
-            cell.classList.add('playhead-active');
-        } else {
-            cell.classList.remove('playhead-active');
-        }
-    });
+    if (!gridTimeline) return;
+
+    // Si no existe la línea del playhead, la creamos dinámicamente una sola vez
+    if (!playhead) {
+        playhead = document.createElement('div');
+        playhead.id = 'piano-playhead';
+        gridTimeline.appendChild(playhead);
+    }
+
+    // Movemos la línea horizontalmente usando las columnas de CSS Grid
+    // Le decimos que se posicione en la columna activa y se estire verticalmente en todas las filas
+    playhead.style.gridColumn = `${activeColumn + 1}`;
+    playhead.style.gridRow = `1 / -1`; // Ocupa desde la primera hasta la última fila
 }
