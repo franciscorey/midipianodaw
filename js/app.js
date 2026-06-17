@@ -82,11 +82,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // 5. OBSERVAR CAMBIOS EN LA GRILLA (Modo en vivo)
-    // Cada vez que muevas, agregues o estires una nota con el mouse, el motor se actualiza automáticamente.
-    const gridTimeline = document.getElementById('grid-timeline');
-    if (gridTimeline) {
+    // Apuntamos a la caja contenedora del Piano Roll para escuchar cuando el mouse suelta una nota
+    const containerTimeline = document.querySelector('.grid-timeline');
+    if (containerTimeline) {
         ['mouseup', 'mouseleave'].forEach(eventType => {
-            gridTimeline.addEventListener(eventType, () => {
+            containerTimeline.addEventListener(eventType, () => {
                 if (playback.isPlaying) {
                     const notesData = pianoRoll.getNotesData();
                     playback.syncSequence(notesData, totalColumns, currentBpm);
@@ -119,7 +119,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 /**
- * Mueve la línea del playhead en la capa flotante de notas
+ * Mueve la línea del playhead en la capa flotante de notas (UNA SOLA DECLARACIÓN)
  */
 function movePlayheadUI(activeColumn, totalColumns) {
     let playhead = document.getElementById('piano-playhead');
@@ -131,25 +131,6 @@ function movePlayheadUI(activeColumn, totalColumns) {
         playhead = document.createElement('div');
         playhead.id = 'piano-playhead';
         notesLayer.appendChild(playhead);
-    }
-
-    playhead.style.gridColumn = `${activeColumn + 1}`;
-    playhead.style.gridRow = `1 / -1`;
-}
-
-/**
- * Pinta visualmente qué columna se está reproduciendo en tiempo real
- */
-function movePlayheadUI(activeColumn, totalColumns) {
-    let playhead = document.getElementById('piano-playhead');
-    const notesLayer = document.getElementById('grid-notes-layer');
-    
-    if (!notesLayer) return;
-
-    if (!playhead) {
-        playhead = document.createElement('div');
-        playhead.id = 'piano-playhead';
-        notesLayer.appendChild(playhead); // Insertar en la capa flotante
     }
 
     playhead.style.gridColumn = `${activeColumn + 1}`;
