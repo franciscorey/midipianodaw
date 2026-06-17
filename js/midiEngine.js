@@ -12,7 +12,9 @@ const KEYBOARD_MAP = {
     'h': 69, // A4 (La)
     'u': 70, // A#4
     'j': 71, // B4 (Si)
-    'k': 72  // C5 (Do siguiente)
+    'k': 72,  // C5 (Do siguiente)
+    'o': 73, // C#5
+    'l': 74  // D5
 };
 
 // Registro para evitar que el evento 'keydown' de la PC repita la nota en bucle
