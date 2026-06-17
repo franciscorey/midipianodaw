@@ -71,7 +71,7 @@ body {
 }
 
 .v-key {
-    height: 24px; /* Debe coincidir simétricamente con el tamaño de fila */
+    height: 24px;
     box-sizing: border-box;
     border-bottom: 1px solid #333;
     font-size: 10px;
@@ -80,7 +80,7 @@ body {
     justify-content: flex-end;
     padding-right: 5px;
     user-select: none;
-    flex-shrink: 0;
+    flex-shrink: 0; /* Evita que el teclado vertical se desfase */
 }
 
 .v-key.white { background-color: #e0e0e0; color: #000; }
@@ -88,18 +88,21 @@ body {
 
 /* La Grilla de Tiempo */
 .grid-timeline {
-    display: grid;
+    position: relative;
     flex-grow: 1;
     background-color: #202024;
+    min-width: max-content; /* Evita que las columnas se aplasten horizontalmente */
 }
 
+/* Forzamos a las celdas del fondo a mantener su tamaño estricto */
 .grid-cell {
-    height: 24px; /* Altura de fila idéntica a la tecla vertical */
-    min-width: 30px; /* Ancho de la subdivisión de tiempo */
+    height: 24px;
+    min-width: 30px;
     box-sizing: border-box;
     border-right: 1px solid #2d2d35;
     border-bottom: 1px solid #2d2d35;
     cursor: pointer;
+    flex-shrink: 0; /* Evita cualquier deformación por flexbox parental */
 }
 
 /* Colores de fondo de las filas correspondientes a teclas negras */
@@ -132,15 +135,15 @@ body {
    COMPLEMENTOS PARA EL RESIZE DEL PIANO ROLL
    ========================================================================== */
 
-/* Nuevo Bloque de Nota Flotante (no deforma la grilla) */
+/* Modificación clave para el bloque de notas flotante */
 .piano-note-block {
     background-color: var(--accent-color, #ff5a5f);
-    border: 1px solid rgba(0,0,0,0.3);
+    border: 1px solid rgba(0,0,0,0.4);
     border-radius: 3px;
     box-shadow: inset 0 0 6px rgba(0,0,0,0.4);
     position: relative;
     z-index: 5;
-    height: 100%; /* Ocupa todo el alto de su fila asignada */
+    height: 24px; 
     box-sizing: border-box;
 }
 
