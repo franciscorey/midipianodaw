@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web MIDI Piano & DAW</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tonejs/midi@2.0.28/build/Midi.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/abcjs@6.2.2/dist/abcjs-basic-min.js"></script>
+</head>
+<body>
+
+    <header class="transport-bar">
+        <div class="transport-controls">
+            <button id="btn-play">▶ Play</button>
+            <button id="btn-pause">⏸ Pause</button>
+            <button id="btn-stop">⏹ Stop</button>
+            <button id="btn-record" class="rec-inactive">🔴 Rec</button>
+        </div>
+        <div class="settings">
+            <label for="bpm">BPM:</label>
+            <input type="number" id="bpm" value="120" min="40" max="240">
+        </div>
+        <div class="export-controls">
+            <button id="btn-export-midi">📦 Exportar MIDI</button>
+            <button id="btn-export-abc">📝 Exportar ABC</button>
+        </div>
+    </header>
+
+    <main class="daw-container">
+        <section class="piano-roll-container">
+            <div id="vertical-piano" class="vertical-piano"></div>
+            <div id="grid-timeline" class="grid-timeline"></div>
+        </section>
+
+        <section id="interactive-piano" class="interactive-piano"></section>
+    </main>
+
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
