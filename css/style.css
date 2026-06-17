@@ -49,3 +49,75 @@ body {
     position: relative;
 }
 /* Estilos para las teclas y celdas de la grilla se manejan aquí de forma limpia */
+
+/*  ---------- */
+/*  PIANO ROLL */
+
+/* Contenedor del Piano Roll */
+.piano-roll-container {
+    display: flex;
+    flex: 1;
+    overflow: auto;
+    background-color: #18181c;
+}
+
+/* Teclado Vertical */
+.vertical-piano {
+    width: 60px;
+    display: flex;
+    flex-direction: column;
+    z-index: 10;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.3);
+}
+
+.v-key {
+    height: 24px; /* Debe coincidir simétricamente con el tamaño de fila */
+    box-sizing: border-box;
+    border-bottom: 1px solid #333;
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 5px;
+    user-select: none;
+}
+
+.v-key.white { background-color: #e0e0e0; color: #000; }
+.v-key.black { background-color: #222; color: #fff; }
+
+/* La Grilla de Tiempo */
+.grid-timeline {
+    display: grid;
+    flex-grow: 1;
+    background-color: #202024;
+}
+
+.grid-cell {
+    height: 24px; /* Altura de fila idéntica a la tecla vertical */
+    min-width: 30px; /* Ancho de la subdivisión de tiempo */
+    box-sizing: border-box;
+    border-right: 1px solid #2d2d35;
+    border-bottom: 1px solid #2d2d35;
+    cursor: pointer;
+}
+
+/* Colores de fondo de las filas correspondientes a teclas negras */
+.bg-black-row {
+    background-color: #1a1a1e;
+}
+
+/* Líneas divisorias de tiempo */
+.grid-cell.beat-start {
+    border-left: 1px solid #444452; /* Línea gris más clara cada pulso */
+}
+
+.grid-cell.bar-start {
+    border-left: 2px solid #88889c; /* Línea fuerte al inicio de cada compás */
+}
+
+/* Estado de la Nota Pintada */
+.grid-cell.note-active {
+    background-color: var(--accent-color, #ff5a5f) !important;
+    border-radius: 2px;
+    box-shadow: inset 0 0 4px rgba(0,0,0,0.5);
+}
