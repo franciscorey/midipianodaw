@@ -17,7 +17,7 @@ class AudioEngine {
                 attack: 0.005,  // Ataque rápido para respuesta inmediata al presionar la tecla
                 decay: 0.1,
                 sustain: 0.3,
-                release: 1      // El sonido decae suavemente al soltar la tecla
+                release: 0.12      // El sonido decae suavemente al soltar la tecla
             }
         }).toDestination();    // .toDestination() equivale al "Master Output" o altavoces
 
