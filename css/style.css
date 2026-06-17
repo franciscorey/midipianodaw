@@ -178,3 +178,15 @@ body {
     cursor: ew-resize !important;
     user-select: none;
 }
+
+/* Iluminación de la columna que está sonando actualmente */
+.grid-cell.playhead-active {
+    background-color: rgba(255, 255, 255, 0.06); /* Sutil cortina clara de fondo */
+    border-left: 1px solid rgba(255, 90, 95, 0.4); /* Línea vertical roja tenue al frente */
+}
+
+/* Si la celda iluminada además tiene una nota pintada, la hacemos brillar ligeramente */
+.grid-cell.note-active.playhead-active {
+    filter: brightness(1.3);
+    box-shadow: 0 0 8px var(--accent-color);
+}
