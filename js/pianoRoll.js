@@ -62,12 +62,26 @@ function buildVerticalPiano(container) {
 /**
  * Genera la grilla de tiempo (Filas x Columnas)
  */
+
 function buildGrid(container) {
     container.innerHTML = '';
     
+    // Aseguramos que el contenedor principal sea relativo
+    container.style.position = 'relative';
+
     const totalRows = CONFIG.startNote - CONFIG.endNote + 1;
-    container.style.gridTemplateRows = `repeat(${totalRows}, 1fr)`;
-    container.style.gridTemplateColumns = `repeat(${state.totalColumns}, 1fr)`;
+    const gridStyles = `
+        display: grid;
+        grid-template-rows: repeat(${totalRows}, 1fr);
+        grid-template-columns: repeat(${state.totalColumns}, 1fr);
+        width: 100%;
+        height: 100%;
+    `;
+
+    // 1. CREAR CAPA DE FONDO (Celdas estáticas)
+    const bgLayer = document.createElement('div');
+    bgLayer.id = 'grid-background';
+    bgLayer.style.cssText = gridStyles;
 
     for (let r = 0; r < totalRows; r++) {
         const noteNumber = CONFIG.startNote - r;
@@ -87,9 +101,23 @@ function buildGrid(container) {
             cell.dataset.note = noteNumber;
             cell.dataset.col = c;
 
-            container.appendChild(cell);
+            bgLayer.appendChild(cell);
         }
     }
+
+    // 2. CREAR CAPA DE NOTAS Y PLAYHEAD (Flotante y absoluta encima del fondo)
+    const notesLayer = document.createElement('div');
+    notesLayer.id = 'grid-notes-layer';
+    notesLayer.style.cssText = gridStyles + `
+        position: absolute;
+        top: 0;
+        left: 0;
+        pointer-events: none; /* Los clicks pasan de largo hacia las celdas del fondo */
+    `;
+
+    // Inyectamos ambas capas en el contenedor principal
+    container.appendChild(bgLayer);
+    container.appendChild(notesLayer);
 }
 
 // Actualiza también el setupInteractions para capturar clicks en los nuevos bloques flotantes
@@ -175,13 +203,10 @@ function setupInteractions(grid) {
  * Lógica para añadir una nota al estado y pintarla como elemento flotante
  */
 function addNote(noteNumber, col, cell) {
-    // Validar si ya existe una nota que empiece en esa misma coordenada
     const exists = state.notes.some(n => n.noteNumber === noteNumber && n.startTime === col);
     if (exists) return;
 
     const noteId = `note-${noteNumber}-${col}`;
-    const totalRows = CONFIG.startNote - CONFIG.endNote + 1;
-    // Calculamos en qué fila de CSS Grid debe caer (la nota más alta es la fila 1)
     const rowIndex = (CONFIG.startNote - noteNumber) + 1; 
 
     const newNote = {
@@ -193,19 +218,21 @@ function addNote(noteNumber, col, cell) {
 
     state.notes.push(newNote);
     
-    // Crear el elemento visual flotante de la nota
     const noteEl = document.createElement('div');
     noteEl.className = 'piano-note-block';
     noteEl.id = noteId;
     noteEl.dataset.noteId = noteId;
     
-    // Posicionamiento absoluto dentro de la grilla usando las líneas de CSS Grid
+    // Permitir interactuar con la nota flotante (cliquear o resize)
+    noteEl.style.pointerEvents = 'auto'; 
     noteEl.style.gridRow = `${rowIndex}`;
     noteEl.style.gridColumn = `${col + 1} / span 1`;
 
-    // Inyectamos el bloque nota DENTRO de la grilla timeline
-    const gridTimeline = document.getElementById('grid-timeline');
-    gridTimeline.appendChild(noteEl);
+    // IMPORTANTE: Se añade a la capa flotante de notas
+    const notesLayer = document.getElementById('grid-notes-layer');
+    if (notesLayer) {
+        notesLayer.appendChild(noteEl);
+    }
 
     if (state.audio) {
         state.audio.triggerAttackRelease(noteNumber, '16n');
