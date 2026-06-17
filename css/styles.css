@@ -1,0 +1,51 @@
+:root {
+    --bg-color: #1e1e24;
+    --panel-color: #2a2a32;
+    --accent-color: #ff5a5f;
+    --grid-line: #3a3a44;
+    --white-key: #f8f9fa;
+    --black-key: #1a1a1a;
+}
+
+body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-color);
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.transport-bar {
+    background-color: var(--panel-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    border-bottom: 2px solid #111;
+}
+
+.daw-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.piano-roll-container {
+    flex: 7; /* Toma la mayor parte del espacio */
+    display: flex;
+    overflow: auto;
+    position: relative;
+}
+
+.interactive-piano {
+    flex: 2; /* Teclado inferior */
+    background-color: var(--panel-color);
+    display: flex;
+    border-top: 4px solid #111;
+    position: relative;
+}
+/* Estilos para las teclas y celdas de la grilla se manejan aquí de forma limpia */
