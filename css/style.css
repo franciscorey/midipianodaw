@@ -133,3 +133,48 @@ body {
     box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.8);
     transition: background-color 0.05s ease;
 }
+
+/* ==========================================================================
+   COMPLEMENTOS PARA EL RESIZE DEL PIANO ROLL
+   ========================================================================== */
+
+/* 1. Modificación para celdas extendidas: 
+   Cuando una nota dura más de 1, el 'span' de CSS Grid la estira.
+   Necesitamos quitar el borde derecho intermedio para que se vea como un bloque único continuo. */
+.grid-cell.note-active.is-extended {
+    border-right: none; 
+    z-index: 2; /* Se posiciona por encima de las líneas divisorias de la grilla */
+}
+
+/* 2. El "tirador" interactivo (Trigger de Resize):
+   Crea una zona invisible de 8px en el borde derecho de la nota activa.
+   Al pasar el mouse, cambia el cursor indicando que se puede arrastrar. */
+.grid-cell.note-active {
+    position: relative; /* Esencial para que el pseudo-elemento se posicione bien */
+}
+
+.grid-cell.note-active::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 8px;
+    cursor: ew-resize; /* Cursor con flechas laterales de redimensionamiento */
+    background: rgba(255, 255, 255, 0.25); /* Un sutil brillo blanco al hacer hover */
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    border-radius: 0 2px 2px 0;
+}
+
+.grid-cell.note-active:hover::after {
+    opacity: 1; /* El tirador se hace visible solo cuando el usuario pasa el mouse por encima */
+}
+
+/* 3. Seguro global de arrastre:
+   Evita que el navegador intente "seleccionar texto" o genere glitches visuales 
+   mientras el usuario mantiene el click presionado moviendo el mouse por la pantalla. */
+.grid-resizing {
+    cursor: ew-resize !important;
+    user-select: none;
+}
