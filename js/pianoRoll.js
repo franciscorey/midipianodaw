@@ -92,79 +92,77 @@ function buildGrid(container) {
     }
 }
 
-/**
- * Configura los Event Listeners globales y de la grilla
- */
+// Actualiza también el setupInteractions para capturar clicks en los nuevos bloques flotantes
 function setupInteractions(grid) {
     grid.addEventListener('contextmenu', e => e.preventDefault());
 
     grid.addEventListener('mousedown', (e) => {
+        // Detectar si clickearon la grilla de fondo o un bloque de nota activo
+        const targetBlock = e.target.closest('.piano-note-block');
         const cell = e.target.closest('.grid-cell');
-        if (!cell) return;
+        
+        if (!targetBlock && !cell) return;
 
-        const note = parseInt(cell.dataset.note);
-        const col = parseInt(cell.dataset.col);
+        // Si es click derecho, borramos (ya sea clickeando el bloque o la celda)
+        if (e.button === 2) {
+            const idToId = targetBlock ? targetBlock.id : cell.dataset.noteId;
+            if (idToId) {
+                state.notes = state.notes.filter(n => n.id !== idToId);
+                document.getElementById(idToId)?.remove();
+            }
+            return;
+        }
 
-        // CHEQUEAR RESIZE: Detectamos si el usuario hizo click en el borde derecho de una nota activa
-        if (e.button === 0 && cell.classList.contains('note-active')) {
-            const rect = cell.getBoundingClientRect();
+        // CHEQUEAR RESIZE en el bloque flotante
+        if (e.button === 0 && targetBlock) {
+            const rect = targetBlock.getBoundingClientRect();
             const clickXFromRight = rect.right - e.clientX;
 
-            // Si hace click a menos de 10 píxeles del borde derecho, activamos el redimensionamiento
-            if (clickXFromRight < 10) {
-                const noteId = cell.dataset.noteId;
+            if (clickXFromRight < 12) {
+                const noteId = targetBlock.id;
                 const foundNote = state.notes.find(n => n.id === noteId);
                 
                 if (foundNote) {
                     state.isResizing = {
                         noteId: noteId,
-                        cell: cell,
+                        cell: targetBlock, // pasamos el bloque flotante
                         startX: e.clientX,
                         startDuration: foundNote.duration,
-                        cellWidth: rect.width / foundNote.duration // Ancho aproximado de 1 sola subcelda
+                        cellWidth: rect.width / foundNote.duration
                     };
                     grid.classList.add('grid-resizing');
-                    return; // Interceptamos el flujo para que no intente volver a añadir la nota
+                    return;
                 }
             }
+            return; // Evita duplicar notas si clickeas encima de una existente
         }
 
-        // Flujo normal de inserción/borrado
-        if (e.button === 0) { 
+        // Click izquierdo en celda vacía: añadir nota normal
+        if (e.button === 0 && cell && !targetBlock) {
+            const note = parseInt(cell.dataset.note);
+            const col = parseInt(cell.dataset.col);
             addNote(note, col, cell);
-        } else if (e.button === 2) { 
-            removeNote(note, col, cell);
         }
     });
 
-    // Evento de arrastre del mouse (Moverse por la pantalla)
     window.addEventListener('mousemove', (e) => {
         if (!state.isResizing) return;
 
         const resizeData = state.isResizing;
         const deltaX = e.clientX - resizeData.startX;
-        
-        // Calculamos cuántas celdas de diferencia hay basadas en el ancho horizontal arrastrado
         const cellsDelta = Math.round(deltaX / resizeData.cellWidth);
         
-        // Nueva duración (mínimo 1 celda para que no desaparezca, y límite derecho de la grilla)
         const foundNote = state.notes.find(n => n.id === resizeData.noteId);
         if (foundNote) {
             let newDuration = Math.max(1, resizeData.startDuration + cellsDelta);
-            
-            // Evitar que la nota se pase del límite total de columnas de la canción
             if (foundNote.startTime + newDuration > state.totalColumns) {
                 newDuration = state.totalColumns - foundNote.startTime;
             }
-
             foundNote.duration = newDuration;
-            
-            // Actualizar visualmente la celda usando CSS Grid Spans
             updateNoteUI(resizeData.cell, foundNote);
         }
     });
 
-    // Soltar el mouse termina la acción de resize
     window.addEventListener('mouseup', () => {
         if (state.isResizing) {
             state.isResizing = null;
@@ -174,14 +172,18 @@ function setupInteractions(grid) {
 }
 
 /**
- * Añade una nota al estado y la pinta
+ * Lógica para añadir una nota al estado y pintarla como elemento flotante
  */
 function addNote(noteNumber, col, cell) {
+    // Validar si ya existe una nota que empiece en esa misma coordenada
     const exists = state.notes.some(n => n.noteNumber === noteNumber && n.startTime === col);
     if (exists) return;
 
     const noteId = `note-${noteNumber}-${col}`;
-    
+    const totalRows = CONFIG.startNote - CONFIG.endNote + 1;
+    // Calculamos en qué fila de CSS Grid debe caer (la nota más alta es la fila 1)
+    const rowIndex = (CONFIG.startNote - noteNumber) + 1; 
+
     const newNote = {
         id: noteId,
         noteNumber: noteNumber,
@@ -191,11 +193,19 @@ function addNote(noteNumber, col, cell) {
 
     state.notes.push(newNote);
     
-    cell.classList.add('note-active');
-    cell.dataset.noteId = noteId;
+    // Crear el elemento visual flotante de la nota
+    const noteEl = document.createElement('div');
+    noteEl.className = 'piano-note-block';
+    noteEl.id = noteId;
+    noteEl.dataset.noteId = noteId;
     
-    // Forzamos el reset de estilos por si acaso
-    updateNoteUI(cell, newNote);
+    // Posicionamiento absoluto dentro de la grilla usando las líneas de CSS Grid
+    noteEl.style.gridRow = `${rowIndex}`;
+    noteEl.style.gridColumn = `${col + 1} / span 1`;
+
+    // Inyectamos el bloque nota DENTRO de la grilla timeline
+    const gridTimeline = document.getElementById('grid-timeline');
+    gridTimeline.appendChild(noteEl);
 
     if (state.audio) {
         state.audio.triggerAttackRelease(noteNumber, '16n');
@@ -203,36 +213,29 @@ function addNote(noteNumber, col, cell) {
 }
 
 /**
- * Actualiza el comportamiento y tamaño de la celda usando CSS Grid
+ * Actualiza el tamaño visual de la nota sin empujar la grilla
  */
-function updateNoteUI(cell, noteObj) {
-    if (noteObj.duration > 1) {
-        // En CSS Grid podemos decirle a un elemento que empiece en su columna nativa 
-        // y se estire (span) tantas columnas hacia adelante como configure la duración.
-        // Sumamos +1 en el inicio porque CSS grid es index-1 para las líneas divisorias.
-        const startLine = noteObj.startTime + 1;
-        cell.style.gridColumn = `${startLine} / span ${noteObj.duration}`;
-        cell.classList.add('is-extended');
-    } else {
-        // Resetear al estado de una sola celda regular
-        cell.style.gridColumn = '';
-        cell.classList.remove('is-extended');
-    }
+function updateNoteUI(cellOrId, noteObj) {
+    // Buscamos el elemento visual por su ID único
+    const noteEl = document.getElementById(noteObj.id);
+    if (!noteEl) return;
+
+    const startLine = noteObj.startTime + 1;
+    noteEl.style.gridColumn = `${startLine} / span ${noteObj.duration}`;
 }
 
 /**
- * Remueve una nota del estado y limpia la UI
+ * Remueve una nota usando el click derecho sobre el bloque flotante
  */
 function removeNote(noteNumber, col, cell) {
-    // Si el usuario hace click derecho en una celda estirada, buscamos su ID real
-    const noteId = cell.dataset.noteId;
+    // Si hicieron click derecho sobre el bloque de la nota o sobre el fondo
+    const noteId = cell.dataset.noteId || cell.id;
     if (!noteId) return;
 
     state.notes = state.notes.filter(n => n.id !== noteId);
     
-    cell.classList.remove('note-active', 'is-extended');
-    cell.removeAttribute('data-note-id');
-    cell.style.gridColumn = '';
+    const noteEl = document.getElementById(noteId);
+    if (noteEl) noteEl.remove();
 }
 
 function clearGridData(grid) {
