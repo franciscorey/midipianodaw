@@ -51,6 +51,9 @@ function setupPcKeyboard(audio) {
         const key = e.key.toLowerCase();
         const midiNote = KEYBOARD_MAP[key];
 
+        // Si el usuario está escribiendo en un input de texto común (como el input-bpm), no disparamos notas
+        if (e.target.tagName === 'INPUT' && e.target.type === 'text') return;
+
         // Si la tecla mapea a una nota y no se está presionando ya (evita repetición por delay del SO)
         if (midiNote && !activePcKeys.has(key)) {
             activePcKeys.add(key);
