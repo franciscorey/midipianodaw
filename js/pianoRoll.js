@@ -123,17 +123,22 @@ function buildGrid(container) {
 }
 
 // Actualiza también el setupInteractions para capturar clicks en los nuevos bloques flotantes
+/**
+ * Configura los Event Listeners para Redimensionar y Desplazar notas
+ */
 function setupInteractions(grid) {
     grid.addEventListener('contextmenu', e => e.preventDefault());
 
+    // Estado local para el arrastre de posición
+    let isDragging = null; 
+
     grid.addEventListener('mousedown', (e) => {
-        // Detectar si clickearon la grilla de fondo o un bloque de nota activo
         const targetBlock = e.target.closest('.piano-note-block');
         const cell = e.target.closest('.grid-cell');
         
         if (!targetBlock && !cell) return;
 
-        // Si es click derecho, borramos (ya sea clickeando el bloque o la celda)
+        // Click derecho: Eliminar nota
         if (e.button === 2) {
             const idToId = targetBlock ? targetBlock.id : cell.dataset.noteId;
             if (idToId) {
@@ -143,31 +148,48 @@ function setupInteractions(grid) {
             return;
         }
 
-        // CHEQUEAR RESIZE en el bloque flotante
+        // Click izquierdo sobre una nota existente
         if (e.button === 0 && targetBlock) {
             const rect = targetBlock.getBoundingClientRect();
             const clickXFromRight = rect.right - e.clientX;
+            const noteId = targetBlock.id;
+            const foundNote = state.notes.find(n => n.id === noteId);
 
+            if (!foundNote) return;
+
+            // CASO A: RESIZE (Click cerca del borde derecho)
             if (clickXFromRight < 12) {
-                const noteId = targetBlock.id;
-                const foundNote = state.notes.find(n => n.id === noteId);
-                
-                if (foundNote) {
-                    state.isResizing = {
-                        noteId: noteId,
-                        cell: targetBlock, // pasamos el bloque flotante
-                        startX: e.clientX,
-                        startDuration: foundNote.duration,
-                        cellWidth: rect.width / foundNote.duration
-                    };
-                    grid.classList.add('grid-resizing');
-                    return;
-                }
+                state.isResizing = {
+                    noteId: noteId,
+                    cell: targetBlock,
+                    startX: e.clientX,
+                    startDuration: foundNote.duration,
+                    cellWidth: rect.width / foundNote.duration
+                };
+                grid.classList.add('grid-resizing');
+                return;
+            } 
+            
+            // CASO B: DRAG / MOVER (Click en el cuerpo de la nota)
+            else {
+                isDragging = {
+                    noteId: noteId,
+                    element: targetBlock,
+                    startCol: foundNote.startTime,
+                    startNoteNum: foundNote.noteNumber,
+                    startX: e.clientX,
+                    startY: e.clientY,
+                    // Calculamos el tamaño real de una celda unitaria en pantalla
+                    cellWidth: rect.width / foundNote.duration,
+                    cellHeight: 24 // Altura rígida de tu CSS
+                };
+                targetBlock.style.opacity = '0.7';
+                grid.style.cursor = 'move';
+                return;
             }
-            return; // Evita duplicar notas si clickeas encima de una existente
         }
 
-        // Click izquierdo en celda vacía: añadir nota normal
+        // Click izquierdo en el fondo: Añadir nueva nota
         if (e.button === 0 && cell && !targetBlock) {
             const note = parseInt(cell.dataset.note);
             const col = parseInt(cell.dataset.col);
@@ -176,20 +198,66 @@ function setupInteractions(grid) {
     });
 
     window.addEventListener('mousemove', (e) => {
-        if (!state.isResizing) return;
-
-        const resizeData = state.isResizing;
-        const deltaX = e.clientX - resizeData.startX;
-        const cellsDelta = Math.round(deltaX / resizeData.cellWidth);
-        
-        const foundNote = state.notes.find(n => n.id === resizeData.noteId);
-        if (foundNote) {
-            let newDuration = Math.max(1, resizeData.startDuration + cellsDelta);
-            if (foundNote.startTime + newDuration > state.totalColumns) {
-                newDuration = state.totalColumns - foundNote.startTime;
+        // 1. LÓGICA DE RESIZE (Existente)
+        if (state.isResizing) {
+            const resizeData = state.isResizing;
+            const deltaX = e.clientX - resizeData.startX;
+            const cellsDelta = Math.round(deltaX / resizeData.cellWidth);
+            const foundNote = state.notes.find(n => n.id === resizeData.noteId);
+            
+            if (foundNote) {
+                let newDuration = Math.max(1, resizeData.startDuration + cellsDelta);
+                if (foundNote.startTime + newDuration > state.totalColumns) {
+                    newDuration = state.totalColumns - foundNote.startTime;
+                }
+                foundNote.duration = newDuration;
+                updateNoteUI(null, foundNote);
             }
-            foundNote.duration = newDuration;
-            updateNoteUI(resizeData.cell, foundNote);
+            return;
+        }
+
+        // 2. LÓGICA DE DRAG / DESPLAZAMIENTO
+        if (isDragging) {
+            const dragData = isDragging;
+            const foundNote = state.notes.find(n => n.id === dragData.noteId);
+
+            if (foundNote) {
+                // Calcular delta en Columnas (Tiempo)
+                const deltaX = e.clientX - dragData.startX;
+                const colsDelta = Math.round(deltaX / dragData.cellWidth);
+                let newCol = dragData.startCol + colsDelta;
+                
+                // Límites horizontales
+                newCol = Math.max(0, Math.min(newCol, state.totalColumns - foundNote.duration));
+
+                // Calcular delta en Filas (Pitch / Nota)
+                const deltaY = e.clientY - dragData.startY;
+                const rowsDelta = Math.round(deltaY / dragData.cellHeight);
+                // Nota: Al arrastrar hacia abajo deltaY es positivo, pero las notas bajan numéricamente
+                let newNoteNum = dragData.startNoteNum - rowsDelta; 
+                
+                // Límites verticales basados en tu CONFIG
+                newNoteNum = Math.max(CONFIG.endNote, Math.min(newNoteNum, CONFIG.startNote));
+
+                // Si cambió de posición o de nota, actualizamos el estado y la UI
+                if (foundNote.startTime !== newCol || foundNote.noteNumber !== newNoteNum) {
+                    foundNote.startTime = newCol;
+                    foundNote.noteNumber = newNoteNum;
+                    
+                    // Reposicionar el bloque flotante en el CSS Grid
+                    const rowIndex = (CONFIG.startNote - newNoteNum) + 1;
+                    dragData.element.style.gridRow = `${rowIndex}`;
+                    
+                    const startLine = newCol + 1;
+                    dragData.element.style.gridColumn = `${startLine} / span ${foundNote.duration}`;
+                    
+                    // Feedback auditivo opcional al mover verticalmente (cambio de nota)
+                    if (dragData.currentNoteNum !== newNoteNum && state.audio) {
+                        state.audio.triggerAttackRelease(newNoteNum, '16n');
+                        dragData.currentNoteNum = newNoteNum;
+                    }
+                }
+            }
         }
     });
 
@@ -197,6 +265,11 @@ function setupInteractions(grid) {
         if (state.isResizing) {
             state.isResizing = null;
             grid.classList.remove('grid-resizing');
+        }
+        if (isDragging) {
+            isDragging.element.style.opacity = '1';
+            grid.style.cursor = '';
+            isDragging = null;
         }
     });
 }
