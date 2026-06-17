@@ -117,15 +117,42 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // Dentro de document.addEventListener('DOMContentLoaded', ...) en js/app.js:
+    // ==========================================
+    // CONTROL DEL SELECTOR DE INSTRUMENTOS (REPARADO)
+    // ==========================================
+
+    const selectInstrument = document.getElementById('select-instrument');
+    
+    if (selectInstrument) {
+        selectInstrument.addEventListener('change', async (e) => {
+            // 1. Asegurar que el contexto de audio esté despierto al modular
+            if (Tone.context.state !== 'running') {
+                await Tone.start();
+            }
+            
+            // 2. Aplicar el cambio en el motor de audio
+            audio.setInstrument(e.target.value);
+            
+            // 3. LA CLAVE: Quitamos el foco del selector para devolvérselo al teclado de la PC
+            selectInstrument.blur();
+        });
+    }
 
     const sliderCutoff = document.getElementById('slider-cutoff');
     const sliderAttack = document.getElementById('slider-attack');
     
+    // ==========================================
+    // CONTROLES DE LOS SLIDERS DE MODULACIÓN (REPARADOS)
+    // ==========================================
     if (sliderCutoff) {
         sliderCutoff.addEventListener('input', (e) => {
             const freq = parseInt(e.target.value);
             audio.setCutoff(freq);
+        });
+        
+        // Cuando el usuario suelta la perilla, liberamos el foco
+        sliderCutoff.addEventListener('change', () => {
+            sliderCutoff.blur();
         });
     }
     
@@ -133,6 +160,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         sliderAttack.addEventListener('input', (e) => {
             const attackValue = parseFloat(e.target.value);
             audio.setAttack(attackValue);
+        });
+        
+        // Cuando el usuario suelta la perilla, liberamos el foco
+        sliderAttack.addEventListener('change', () => {
+            sliderAttack.blur();
         });
     }
 });
