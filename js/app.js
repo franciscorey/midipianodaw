@@ -11,20 +11,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     const pianoRoll = initPianoRoll();
     const playback = initPlayback();
 
-    // Variable para controlar el BPM actual (puedes enlazarla a un input en tu HTML)
+    // Variables de control de la sesión
     let currentBpm = 120; 
-    const totalColumns = 64; // Sincronizado con las columnas de tu pianoRoll (4 compases)
+    const totalColumns = 64; // 4 compases de 16 subdivisiones
 
-    // 2. Inicializar el motor de audio al primer click del usuario
+    // 2. Inicializar el motor de audio al primer click del usuario (Políticas de navegadores)
     document.body.addEventListener('click', async () => {
         await Tone.start();
         console.log('Audio Context e hilos de audio listos');
     }, { once: true });
 
-    // 3. Vincular los controles de la Barra de Transporte (Play, Pause, Stop)
+    // 3. Vincular los controles de la Barra de Transporte (Play, Pause, Stop, Loop)
     const btnPlay = document.getElementById('btn-play');
     const btnPause = document.getElementById('btn-pause');
     const btnStop = document.getElementById('btn-stop');
+    const btnLoop = document.getElementById('btn-loop');
 
     if (btnPlay) {
         btnPlay.addEventListener('click', () => {
@@ -47,32 +48,94 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // Opcional: Escuchar cambios de BPM si tienes un input con id="input-bpm"
+    if (btnLoop) {
+        btnLoop.addEventListener('click', () => {
+            const nextLoopState = !playback.isLooping;
+            playback.setLoop(nextLoopState);
+            
+            if (nextLoopState) {
+                btnLoop.classList.add('transport-active');
+            } else {
+                btnLoop.classList.remove('transport-active');
+            }
+
+            // Si está sonando, actualizamos el comportamiento del Transport de inmediato
+            if (playback.isPlaying) {
+                const notesData = pianoRoll.getNotesData();
+                playback.syncSequence(notesData, totalColumns, currentBpm);
+            }
+        });
+    }
+
+    // 4. Control de BPM dinámico
     const inputBpm = document.getElementById('input-bpm');
     if (inputBpm) {
         inputBpm.addEventListener('input', (e) => {
             currentBpm = parseInt(e.target.value) || 120;
-            const notesData = pianoRoll.getNotesData();
-            playback.syncSequence(notesData, totalColumns, currentBpm);
+            if (playback.isPlaying) {
+                const notesData = pianoRoll.getNotesData();
+                playback.syncSequence(notesData, totalColumns, currentBpm);
+            } else {
+                Tone.Transport.bpm.value = currentBpm;
+            }
         });
     }
 
-    // 4. Mover la línea visual del Playhead en la grilla
+    // 5. OBSERVAR CAMBIOS EN LA GRILLA (Modo en vivo)
+    // Cada vez que muevas, agregues o estires una nota con el mouse, el motor se actualiza automáticamente.
+    const gridTimeline = document.getElementById('grid-timeline');
+    if (gridTimeline) {
+        ['mouseup', 'mouseleave'].forEach(eventType => {
+            gridTimeline.addEventListener(eventType, () => {
+                if (playback.isPlaying) {
+                    const notesData = pianoRoll.getNotesData();
+                    playback.syncSequence(notesData, totalColumns, currentBpm);
+                }
+            });
+        });
+    }
+
+    // 6. Registro Único del Tracking Visual del Playhead
     playback.onProgress((currentColumn) => {
         movePlayheadUI(currentColumn, totalColumns);
     });
 
-    // 5. Vincular eventos de exportación existentes
-    document.getElementById('btn-export-midi').addEventListener('click', () => {
-        const notesData = pianoRoll.getNotesData();
-        exportToMidi(notesData, currentBpm);
-    });
+    // 7. Vincular eventos de exportación
+    const btnMidi = document.getElementById('btn-export-midi');
+    if (btnMidi) {
+        btnMidi.addEventListener('click', () => {
+            const notesData = pianoRoll.getNotesData();
+            exportToMidi(notesData, currentBpm);
+        });
+    }
 
-    document.getElementById('btn-export-abc').addEventListener('click', () => {
-        const notesData = pianoRoll.getNotesData();
-        exportToAbc(notesData, currentBpm);
-    });
+    const btnAbc = document.getElementById('btn-export-abc');
+    if (btnAbc) {
+        btnAbc.addEventListener('click', () => {
+            const notesData = pianoRoll.getNotesData();
+            exportToAbc(notesData, currentBpm);
+        });
+    }
 });
+
+/**
+ * Mueve la línea del playhead en la capa flotante de notas
+ */
+function movePlayheadUI(activeColumn, totalColumns) {
+    let playhead = document.getElementById('piano-playhead');
+    const notesLayer = document.getElementById('grid-notes-layer');
+    
+    if (!notesLayer) return;
+
+    if (!playhead) {
+        playhead = document.createElement('div');
+        playhead.id = 'piano-playhead';
+        notesLayer.appendChild(playhead);
+    }
+
+    playhead.style.gridColumn = `${activeColumn + 1}`;
+    playhead.style.gridRow = `1 / -1`;
+}
 
 /**
  * Pinta visualmente qué columna se está reproduciendo en tiempo real
