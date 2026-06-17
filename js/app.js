@@ -116,6 +116,25 @@ document.addEventListener('DOMContentLoaded', async () => {
             exportToAbc(notesData, currentBpm);
         });
     }
+
+    // Dentro de document.addEventListener('DOMContentLoaded', ...) en js/app.js:
+
+    const sliderCutoff = document.getElementById('slider-cutoff');
+    const sliderAttack = document.getElementById('slider-attack');
+    
+    if (sliderCutoff) {
+        sliderCutoff.addEventListener('input', (e) => {
+            const freq = parseInt(e.target.value);
+            audio.setCutoff(freq);
+        });
+    }
+    
+    if (sliderAttack) {
+        sliderAttack.addEventListener('input', (e) => {
+            const attackValue = parseFloat(e.target.value);
+            audio.setAttack(attackValue);
+        });
+    }
 });
 
 /**
