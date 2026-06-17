@@ -35,10 +35,15 @@ body {
 }
 
 .piano-roll-container {
-    flex: 7; /* Toma la mayor parte del espacio */
-    display: flex;
-    overflow: auto;
-    position: relative;
+  flex: 7;
+  display: flex;
+  flex-direction: row; /* Piano a la izquierda, grilla a la derecha */
+  height: 600px;       /* O la altura fija que prefieras para tu espacio de trabajo */
+  overflow-y: auto;    /* ¡AQUÍ VA EL SCROLL VERTICAL! Mueve el piano y la grilla juntos */
+  overflow-x: hidden;
+  background-color: #18181c;
+  position: relative;
+  border-bottom: 2px solid #2a2a32;
 }
 
 .interactive-piano {
@@ -51,15 +56,6 @@ body {
 /* Estilos para las teclas y celdas de la grilla se manejan aquí de forma limpia */
 
 /*  ---------- */
-/*  PIANO ROLL */
-
-/* Contenedor del Piano Roll */
-.piano-roll-container {
-    display: flex;
-    flex: 1;
-    overflow: auto;
-    background-color: #18181c;
-}
 
 /* Teclado Vertical */
 .vertical-piano {
@@ -91,7 +87,8 @@ body {
     position: relative;
     flex-grow: 1;
     background-color: #202024;
-    min-width: max-content; /* Evita que las columnas se aplasten horizontalmente */
+    overflow-x: auto;  /* ¡CLAVE! Permite scroll horizontal para avanzar en el tiempo (compases) */
+    overflow-y: hidden;
 }
 
 /* Forzamos a las celdas del fondo a mantener su tamaño estricto */
