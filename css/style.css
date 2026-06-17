@@ -181,18 +181,21 @@ body {
     box-shadow: 0 0 8px var(--accent-color);
 }
 
-/* Asegurar que la grilla admita elementos absolutos/flotantes controlados */
+/* El contenedor padre en tu HTML */
 .grid-timeline {
-    position: relative; 
+    position: relative;
+    flex-grow: 1;
+    background-color: #202024;
+    overflow: hidden;
 }
 
-/* La línea vertical del Playhead */
+/* Modificamos el playhead para que no empuje columnas */
 #piano-playhead {
-    background-color: #00adb5; /* Color cian de tu feedback para que resalte */
+    background-color: #00adb5; 
     width: 2px;
     height: 100%;
-    z-index: 20; /* Por encima de las notas y las celdas */
-    pointer-events: none; /* No interfiere con los clicks del usuario */
+    z-index: 20; 
+    pointer-events: none; 
     box-shadow: 0 0 8px #00adb5;
     justify-self: start;
 }
