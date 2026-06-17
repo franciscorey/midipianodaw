@@ -79,19 +79,16 @@ document.addEventListener('DOMContentLoaded', async () => {
  */
 function movePlayheadUI(activeColumn, totalColumns) {
     let playhead = document.getElementById('piano-playhead');
-    const gridTimeline = document.getElementById('grid-timeline');
+    const notesLayer = document.getElementById('grid-notes-layer');
     
-    if (!gridTimeline) return;
+    if (!notesLayer) return;
 
-    // Si no existe la línea del playhead, la creamos dinámicamente una sola vez
     if (!playhead) {
         playhead = document.createElement('div');
         playhead.id = 'piano-playhead';
-        gridTimeline.appendChild(playhead);
+        notesLayer.appendChild(playhead); // Insertar en la capa flotante
     }
 
-    // Movemos la línea horizontalmente usando las columnas de CSS Grid
-    // Le decimos que se posicione en la columna activa y se estire verticalmente en todas las filas
     playhead.style.gridColumn = `${activeColumn + 1}`;
-    playhead.style.gridRow = `1 / -1`; // Ocupa desde la primera hasta la última fila
+    playhead.style.gridRow = `1 / -1`;
 }
