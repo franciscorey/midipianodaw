@@ -1,83 +1,84 @@
-// Variable privada para almacenar la instancia del motor de audio
 let instance = null;
 
-/**
- * Clase interna que gestiona el sintetizador y la salida de audio
- */
 class AudioEngine {
     constructor() {
-        // 1. Creamos un sintetizador polifónico estándar.
-        // Usamos PolySynth para que el usuario pueda tocar varias notas a la vez (acordes).
-        // Por defecto utiliza un Tone.Synth básico con onda senoidal.
-        this.synth = new Tone.PolySynth(Tone.Synth, {
-            oscillator: {
-                type: "triangle" // "triangle" da un sonido suave tipo piano eléctrico/flauta, ideal para monitorear
+        // 1. Crear Efectos Globales para enriquecer la síntesis
+        this.delay = new Tone.FeedbackDelay("8n.", 0.3).toDestination();
+        this.delay.wet.value = 0.2; // 20% de efecto de eco por defecto
+
+        this.filter = new Tone.Filter(1200, "lowpass").toDestination();
+
+        // 2. Definir los "Instrumentos" como configuraciones de síntesis puras (Presets)
+        this.presets = {
+            // Preset 1: El clásico Synth que ya tenías
+            synth: {
+                oscillator: { type: "triangle" },
+                envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 0.15 }
             },
-            envelope: {
-                attack: 0.005,  // Ataque rápido para respuesta inmediata al presionar la tecla
-                decay: 0.1,
-                sustain: 0.3,
-                release: 0.12      // El sonido decae suavemente al soltar la tecla
+            // Preset 2: Un bajo gordo y percusivo (Onda de sierra, release corto)
+            bass: {
+                oscillator: { type: "sawtooth" },
+                envelope: { attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.08 }
+            },
+            // Preset 3: Un Pad suave y atmosférico (Ataque y release muy largos, onda de domo/cuadrada)
+            pad: {
+                oscillator: { type: "sine" },
+                envelope: { attack: 0.4, decay: 0.3, sustain: 0.7, release: 0.8 }
+            },
+            // Preset 4: Un sonido Chiptune/Retro de 8 bits
+            retro: {
+                oscillator: { type: "square" },
+                envelope: { attack: 0.001, decay: 0.05, sustain: 0.2, release: 0.05 }
             }
-        }).toDestination();    // .toDestination() equivale al "Master Output" o altavoces
+        };
 
-        // 2. Limitador de volumen para proteger los oídos del usuario (Ganancia a -6dB)
-        this.synth.volume.value = -6; 
+        this.currentPreset = 'synth';
+
+        // 3. Inicializar el PolySynth principal
+        this.synth = new Tone.PolySynth(Tone.Synth, this.presets[this.currentPreset]);
+        
+        // Ruteamos el sintetizador a través del filtro y del delay antes de la salida general
+        this.synth.connect(this.filter);
+        this.synth.connect(this.delay);
     }
 
     /**
-     * Activa el sonido de una nota (Note On)
-     * @param {string|number} note - Nota en formato texto (ej: "C4") o número MIDI (ej: 60)
+     * Modula el sintetizador aplicando un preset de diseño sonoro diferente
+     * @param {string} name - 'synth', 'bass', 'pad', 'retro'
      */
-    triggerAttack(note) {
-        // Si viene en formato número MIDI, Tone.js lo traduce automáticamente a frecuencia
-        const formattedNote = typeof note === 'number' ? Tone.Frequency(note, "midi").toNote() : note;
-        
-        // Validamos que el contexto de audio esté activo (regla de seguridad de los navegadores)
-        if (Tone.context.state === 'running') {
-            this.synth.triggerAttack(formattedNote);
+    setInstrument(name) {
+        if (this.presets[name]) {
+            this.currentPreset = name;
+            // Tone.js permite actualizar los parámetros del sintetizador en caliente con set()
+            this.synth.set(this.presets[name]);
+            console.log(`Frecuencias y modulación cambiadas al preset: ${name}`);
         }
     }
 
     /**
-     * Libera el sonido de una nota (Note Off)
-     * @param {string|number} note - Nota que se deja de presionar
+     * Permite cambiar perillas o parámetros individuales en tiempo real desde inputs
+     * @param {string} property - ej: "oscillator.type" o "envelope.attack"
+     * @param {any} value 
      */
-    triggerRelease(note) {
-        const formattedNote = typeof note === 'number' ? Tone.Frequency(note, "midi").toNote() : note;
-        
-        if (Tone.context.state === 'running') {
-            this.synth.triggerRelease(formattedNote);
-        }
+    updateParameter(property, value) {
+        this.synth.set({ [property]: value });
     }
 
     /**
-     * Toca una nota con una duración fija determinada (Ideal para el Piano Roll)
-     * @param {string|number} note - Nota musical
-     * @param {string} duration - Duración en formato Tone (ej: "16n" para semicorchea, "4n" para negra)
+     * Ejecuta el sonido de una nota
      */
-    triggerAttackRelease(note, duration = "16n") {
+    triggerAttackRelease(note, duration, time) {
+        // Aseguramos que la nota esté en formato científico (ej: "C4")
         const formattedNote = typeof note === 'number' ? Tone.Frequency(note, "midi").toNote() : note;
         
-        if (Tone.context.state === 'running') {
+        if (time) {
+            this.synth.triggerAttackRelease(formattedNote, duration, time);
+        } else {
             this.synth.triggerAttackRelease(formattedNote, duration);
         }
     }
-
-    /**
-     * Permite cambiar el tipo de onda del oscilador dinámicamente desde la UI
-     * @param {string} type - "sine", "square", "sawtooth", "triangle"
-     */
-    setOscillatorType(type) {
-        this.synth.set({
-            oscillator: { type: type }
-        });
-    }
 }
 
-/**
- * Inicializador del módulo (Exporta una única instancia controlada)
- */
 export function initAudio() {
     if (!instance) {
         instance = new AudioEngine();
