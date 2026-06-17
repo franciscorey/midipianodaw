@@ -2,7 +2,7 @@ import { initAudio } from './audioEngine.js';
 
 // Configuración de la grilla (Modificable)
 const CONFIG = {
-    startNote: 72,     // C5
+    startNote: 84,     // C6
     endNote: 48,       // C3
     totalBars: 4,      // Cantidad de compases
     subdivisions: 4,   // 4 subdivisiones por pulso (Semicorcheas)
@@ -36,9 +36,53 @@ export function initPianoRoll() {
     buildGrid(gridTimeline);
     setupInteractions(gridTimeline);
 
+    // NUEVO: Retornamos las funciones expandidas que necesita app.js
     return {
         getNotesData: () => state.notes,
-        clearGrid: () => clearGridData(gridTimeline)
+        clearAllNotes: () => {
+            state.notes = [];
+            // Limpiar visualmente la grilla flotante de notas
+            const notesLayer = document.getElementById('grid-notes-layer');
+            if (notesLayer) {
+                // Removemos todo excepto el playhead si existiera
+                notesLayer.querySelectorAll('.piano-note-block').forEach(el => el.remove());
+            }
+        },
+        loadNotesData: (notesArray) => {
+            state.notes = notesArray;
+            const notesLayer = document.getElementById('grid-notes-layer');
+            if (!notesLayer) return;
+
+            // Limpiamos notas viejas antes de renderizar
+            notesLayer.querySelectorAll('.piano-note-block').forEach(el => el.remove());
+
+            // Dibujar cada nota almacenada en LocalStorage
+            notesArray.forEach(note => {
+                const rowIndex = (CONFIG.startNote - note.noteNumber) + 1;
+                const noteEl = document.createElement('div');
+                noteEl.className = 'piano-note-block';
+                noteEl.id = note.id;
+                noteEl.dataset.noteId = note.id;
+                noteEl.style.pointerEvents = 'auto';
+                noteEl.style.gridRow = `${rowIndex}`;
+                noteEl.style.gridColumn = `${note.startTime + 1} / span ${note.duration}`;
+                
+                notesLayer.appendChild(noteEl);
+            });
+        },
+        addNoteFromRecording: (noteNumber, col) => {
+            addNote(noteNumber, col, null);
+        },
+        getNoteNumberFromKey: (key) => {
+            // Mapeo adaptado con tus nuevas notas integradas (Modifícalo como gustes)
+            const mapping = { 
+                'a': 60, 'w': 61, 's': 62, 'e': 63, 'd': 64, 'f': 65, 't': 66,
+                'g': 67, 'y': 68, 'h': 69, 'u': 70, 'j': 71, 'k': 72, 
+                'o': 73, // C#5
+                'l': 74  // D5
+            };
+            return mapping[key.toLowerCase()] || null;
+        }
     };
 }
 
@@ -60,10 +104,6 @@ function buildVerticalPiano(container) {
 }
 
 /**
- * Genera la grilla de tiempo (Filas x Columnas)
- */
-
-/**
  * Genera la grilla de tiempo con capas separadas y alturas fijas de 24px
  */
 function buildGrid(container) {
@@ -72,7 +112,6 @@ function buildGrid(container) {
 
     const totalRows = CONFIG.startNote - CONFIG.endNote + 1;
     
-    // CORRECCIÓN AQUÍ: Forzamos que cada fila mida exactamente 24px en lugar de 1fr
     const gridStyles = `
         display: grid;
         grid-template-rows: repeat(${totalRows}, 24px); 
@@ -122,14 +161,12 @@ function buildGrid(container) {
     container.appendChild(notesLayer);
 }
 
-// Actualiza también el setupInteractions para capturar clicks en los nuevos bloques flotantes
 /**
  * Configura los Event Listeners para Redimensionar y Desplazar notas
  */
 function setupInteractions(grid) {
     grid.addEventListener('contextmenu', e => e.preventDefault());
 
-    // Estado local para el arrastre de posición
     let isDragging = null; 
 
     grid.addEventListener('mousedown', (e) => {
@@ -157,7 +194,7 @@ function setupInteractions(grid) {
 
             if (!foundNote) return;
 
-            // CASO A: RESIZE (Click cerca del borde derecho)
+            // CASO A: RESIZE
             if (clickXFromRight < 12) {
                 state.isResizing = {
                     noteId: noteId,
@@ -170,7 +207,7 @@ function setupInteractions(grid) {
                 return;
             } 
             
-            // CASO B: DRAG / MOVER (Click en el cuerpo de la nota)
+            // CASO B: DRAG / MOVER
             else {
                 isDragging = {
                     noteId: noteId,
@@ -179,9 +216,8 @@ function setupInteractions(grid) {
                     startNoteNum: foundNote.noteNumber,
                     startX: e.clientX,
                     startY: e.clientY,
-                    // Calculamos el tamaño real de una celda unitaria en pantalla
                     cellWidth: rect.width / foundNote.duration,
-                    cellHeight: 24 // Altura rígida de tu CSS
+                    cellHeight: 24 
                 };
                 targetBlock.style.opacity = '0.7';
                 grid.style.cursor = 'move';
@@ -198,7 +234,7 @@ function setupInteractions(grid) {
     });
 
     window.addEventListener('mousemove', (e) => {
-        // 1. LÓGICA DE RESIZE (Existente)
+        // 1. LÓGICA DE RESIZE
         if (state.isResizing) {
             const resizeData = state.isResizing;
             const deltaX = e.clientX - resizeData.startX;
@@ -222,36 +258,26 @@ function setupInteractions(grid) {
             const foundNote = state.notes.find(n => n.id === dragData.noteId);
 
             if (foundNote) {
-                // Calcular delta en Columnas (Tiempo)
                 const deltaX = e.clientX - dragData.startX;
                 const colsDelta = Math.round(deltaX / dragData.cellWidth);
                 let newCol = dragData.startCol + colsDelta;
-                
-                // Límites horizontales
                 newCol = Math.max(0, Math.min(newCol, state.totalColumns - foundNote.duration));
 
-                // Calcular delta en Filas (Pitch / Nota)
                 const deltaY = e.clientY - dragData.startY;
                 const rowsDelta = Math.round(deltaY / dragData.cellHeight);
-                // Nota: Al arrastrar hacia abajo deltaY es positivo, pero las notas bajan numéricamente
                 let newNoteNum = dragData.startNoteNum - rowsDelta; 
-                
-                // Límites verticales basados en tu CONFIG
                 newNoteNum = Math.max(CONFIG.endNote, Math.min(newNoteNum, CONFIG.startNote));
 
-                // Si cambió de posición o de nota, actualizamos el estado y la UI
                 if (foundNote.startTime !== newCol || foundNote.noteNumber !== newNoteNum) {
                     foundNote.startTime = newCol;
                     foundNote.noteNumber = newNoteNum;
                     
-                    // Reposicionar el bloque flotante en el CSS Grid
                     const rowIndex = (CONFIG.startNote - newNoteNum) + 1;
                     dragData.element.style.gridRow = `${rowIndex}`;
                     
                     const startLine = newCol + 1;
                     dragData.element.style.gridColumn = `${startLine} / span ${foundNote.duration}`;
                     
-                    // Feedback auditivo opcional al mover verticalmente (cambio de nota)
                     if (dragData.currentNoteNum !== newNoteNum && state.audio) {
                         state.audio.triggerAttackRelease(newNoteNum, '16n');
                         dragData.currentNoteNum = newNoteNum;
@@ -298,12 +324,10 @@ function addNote(noteNumber, col, cell) {
     noteEl.id = noteId;
     noteEl.dataset.noteId = noteId;
     
-    // Permitir interactuar con la nota flotante (cliquear o resize)
     noteEl.style.pointerEvents = 'auto'; 
     noteEl.style.gridRow = `${rowIndex}`;
     noteEl.style.gridColumn = `${col + 1} / span 1`;
 
-    // IMPORTANTE: Se añade a la capa flotante de notas
     const notesLayer = document.getElementById('grid-notes-layer');
     if (notesLayer) {
         notesLayer.appendChild(noteEl);
@@ -318,35 +342,11 @@ function addNote(noteNumber, col, cell) {
  * Actualiza el tamaño visual de la nota sin empujar la grilla
  */
 function updateNoteUI(cellOrId, noteObj) {
-    // Buscamos el elemento visual por su ID único
     const noteEl = document.getElementById(noteObj.id);
     if (!noteEl) return;
 
     const startLine = noteObj.startTime + 1;
     noteEl.style.gridColumn = `${startLine} / span ${noteObj.duration}`;
-}
-
-/**
- * Remueve una nota usando el click derecho sobre el bloque flotante
- */
-function removeNote(noteNumber, col, cell) {
-    // Si hicieron click derecho sobre el bloque de la nota o sobre el fondo
-    const noteId = cell.dataset.noteId || cell.id;
-    if (!noteId) return;
-
-    state.notes = state.notes.filter(n => n.id !== noteId);
-    
-    const noteEl = document.getElementById(noteId);
-    if (noteEl) noteEl.remove();
-}
-
-function clearGridData(grid) {
-    state.notes = [];
-    grid.querySelectorAll('.note-active').forEach(cell => {
-        cell.classList.remove('note-active', 'is-extended');
-        cell.removeAttribute('data-note-id');
-        cell.style.gridColumn = '';
-    });
 }
 
 function isNoteBlack(noteNumber) {
