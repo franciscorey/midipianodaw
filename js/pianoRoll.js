@@ -63,22 +63,24 @@ function buildVerticalPiano(container) {
  * Genera la grilla de tiempo (Filas x Columnas)
  */
 
+/**
+ * Genera la grilla de tiempo con capas separadas y alturas fijas de 24px
+ */
 function buildGrid(container) {
     container.innerHTML = '';
-    
-    // Aseguramos que el contenedor principal sea relativo
     container.style.position = 'relative';
 
     const totalRows = CONFIG.startNote - CONFIG.endNote + 1;
+    
+    // CORRECCIÓN AQUÍ: Forzamos que cada fila mida exactamente 24px en lugar de 1fr
     const gridStyles = `
         display: grid;
-        grid-template-rows: repeat(${totalRows}, 1fr);
+        grid-template-rows: repeat(${totalRows}, 24px); 
         grid-template-columns: repeat(${state.totalColumns}, 1fr);
         width: 100%;
-        height: 100%;
     `;
 
-    // 1. CREAR CAPA DE FONDO (Celdas estáticas)
+    // 1. CREAR CAPA DE FONDO
     const bgLayer = document.createElement('div');
     bgLayer.id = 'grid-background';
     bgLayer.style.cssText = gridStyles;
@@ -105,17 +107,17 @@ function buildGrid(container) {
         }
     }
 
-    // 2. CREAR CAPA DE NOTAS Y PLAYHEAD (Flotante y absoluta encima del fondo)
+    // 2. CREAR CAPA DE NOTAS Y PLAYHEAD
     const notesLayer = document.createElement('div');
     notesLayer.id = 'grid-notes-layer';
     notesLayer.style.cssText = gridStyles + `
         position: absolute;
         top: 0;
         left: 0;
-        pointer-events: none; /* Los clicks pasan de largo hacia las celdas del fondo */
+        height: 100%;
+        pointer-events: none;
     `;
 
-    // Inyectamos ambas capas en el contenedor principal
     container.appendChild(bgLayer);
     container.appendChild(notesLayer);
 }
