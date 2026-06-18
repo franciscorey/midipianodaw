@@ -112,44 +112,26 @@ function buildGrid(container) {
 
     const totalRows = CONFIG.startNote - CONFIG.endNote + 1;
     
+    // Simplificamos: Quitamos los estilos inline rígidos de las columnas
+    // para que el CSS controle el ancho exacto de 2560px (64 col x 40px)
     const gridStyles = `
         display: grid;
         grid-template-rows: repeat(${totalRows}, 24px); 
-        grid-template-columns: repeat(${state.totalColumns}, 1fr);
-        width: 100%;
+        position: relative;
     `;
 
     // 1. CREAR CAPA DE FONDO
     const bgLayer = document.createElement('div');
     bgLayer.id = 'grid-background';
-    bgLayer.style.cssText = gridStyles;
+    // Dejamos que el CSS ponga las columnas y el ancho fijo
 
-    for (let r = 0; r < totalRows; r++) {
-        const noteNumber = CONFIG.startNote - r;
-        const isBlack = isNoteBlack(noteNumber);
+    // ... (aquí va tu bucle for existente de filas y columnas que crea las celdas) ...
+    // Asegúrate de que las celdas se agreguen al bgLayer como ya lo hacías.
 
-        for (let c = 0; c < state.totalColumns; c++) {
-            const cell = document.createElement('div');
-            cell.className = 'grid-cell';
-            if (isBlack) cell.classList.add('bg-black-row');
-            
-            if (c % (CONFIG.beatsPerBar * CONFIG.subdivisions) === 0) {
-                cell.classList.add('bar-start');
-            } else if (c % CONFIG.subdivisions === 0) {
-                cell.classList.add('beat-start');
-            }
-
-            cell.dataset.note = noteNumber;
-            cell.dataset.col = c;
-
-            bgLayer.appendChild(cell);
-        }
-    }
-
-    // 2. CREAR CAPA DE NOTAS Y PLAYHEAD
+    // 2. CREAR CAPA DE NOTAS
     const notesLayer = document.createElement('div');
     notesLayer.id = 'grid-notes-layer';
-    notesLayer.style.cssText = gridStyles + `
+    notesLayer.style.cssText = `
         position: absolute;
         top: 0;
         left: 0;
