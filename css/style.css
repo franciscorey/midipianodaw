@@ -82,24 +82,16 @@ body {
 .v-key.white { background-color: #e0e0e0; color: #000; }
 .v-key.black { background-color: #222; color: #fff; }
 
-/* La Grilla de Tiempo */
-.grid-timeline {
-    position: relative;
-    flex-grow: 1;
-    background-color: #202024;
-    overflow-x: auto;  /* ¡CLAVE! Permite scroll horizontal para avanzar en el tiempo (compases) */
-    overflow-y: hidden;
-}
 
-/* Forzamos a las celdas del fondo a mantener su tamaño estricto */
+/* 3. Las celdas de fondo se adaptan al tamaño de la columna del grid */
 .grid-cell {
     height: 24px;
-    min-width: 30px;
+    width: 40px; /* Misma anchura que la columna del grid */
     box-sizing: border-box;
     border-right: 1px solid #2d2d35;
     border-bottom: 1px solid #2d2d35;
     cursor: pointer;
-    flex-shrink: 0; /* Evita cualquier deformación por flexbox parental */
+    flex-shrink: 0;
 }
 
 /* Colores de fondo de las filas correspondientes a teclas negras */
@@ -133,14 +125,15 @@ body {
    ========================================================================== */
 
 /* Modificación clave para el bloque de notas flotante */
+/* 4. Bloques de notas flotantes (Alineación milimétrica) */
 .piano-note-block {
-    background-color: var(--accent-color, #ff5a5f);
-    border: 1px solid rgba(0,0,0,0.4);
+    height: 22px;
+    margin-top: 1px;
+    background-color: #ff5533;
+    border: 1px solid #fff;
     border-radius: 3px;
-    box-shadow: inset 0 0 6px rgba(0,0,0,0.4);
-    position: relative;
     z-index: 5;
-    height: 24px; 
+    box-shadow: 1px 1px 3px rgba(0,0,0,0.4);
     box-sizing: border-box;
 }
 
@@ -182,12 +175,29 @@ body {
     box-shadow: 0 0 8px var(--accent-color);
 }
 
-/* El contenedor padre en tu HTML */
+/* 1. La Grilla de Tiempo (Contenedor padre que tiene el scroll horizontal) */
 .grid-timeline {
     position: relative;
     flex-grow: 1;
     background-color: #202024;
-    overflow: hidden;
+    overflow-x: auto;   /* Permite scroll horizontal en pantallas chicas */
+    overflow-y: hidden;
+    display: block;     /* Asegura que el scroll funcione de forma aislada */
+}
+
+/* 2. Forzamos un tamaño exacto y rígido para las capas de fondo y notas */
+#grid-background, #grid-notes-layer {
+    display: grid;
+    /* Mantenemos tus filas en 24px */
+    grid-template-rows: repeat(auto-fill, 24px); 
+    
+    /* CAMBIO CLAVE: Cada una de las 64 columnas medirá exactamente 40px, sin encogerse jamás */
+    grid-template-columns: repeat(64, 40px) !important; 
+    
+    /* Ancho total matemático exacto: 64 columnas x 40px = 2560px */
+    width: 2560px !important; 
+    min-width: 2560px !important;
+    box-sizing: border-box;
 }
 
 /* Modificamos el playhead para que no empuje columnas */
