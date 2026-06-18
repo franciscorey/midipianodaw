@@ -210,3 +210,72 @@ body {
     box-shadow: 0 0 8px #00adb5;
     justify-self: start;
 }
+
+/* PIANO INFERIOR Contenedor principal inferior */
+.interactive-piano {
+    flex: 2;
+    background-color: #111115;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; /* Alinea las teclas arriba */
+    padding: 10px 0;
+    border-top: 4px solid #2a2a32;
+    position: relative;
+    min-height: 160px;
+}
+
+/* Contenedor interno donde se dibujarán las teclas */
+#keyboard-vkey-container {
+    display: flex;
+    position: relative;
+    height: 140px;
+    background: #111115;
+    user-select: none;
+}
+
+/* Teclas Blancas */
+.vkey-white {
+    width: 35px;
+    height: 140px;
+    background-color: #f0f0f4;
+    border: 1px solid #1c1c22;
+    border-radius: 0 0 4px 4px;
+    cursor: pointer;
+    z-index: 1;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 8px;
+    font-size: 9px;
+    color: #666;
+    font-weight: bold;
+    box-sizing: border-box;
+    transition: background-color 0.05s ease;
+}
+
+/* Teclas Negras (Flotantes) */
+.vkey-black {
+    width: 22px;
+    height: 85px;
+    background-color: #22222b;
+    border: 1px solid #000;
+    border-radius: 0 0 3px 3px;
+    cursor: pointer;
+    z-index: 2;
+    /* Truco matemático: se mueven a la izquierda para quedar entre dos blancas */
+    margin-left: -11px;
+    margin-right: -11px;
+    box-sizing: border-box;
+    transition: background-color 0.05s ease;
+}
+
+/* Estados Activos (Cuando se presionan o se toca con la PC) */
+.vkey-white.active {
+    background-color: #ff5533 !important; /* Mismo color neobrutalista de tus notas */
+    color: #fff;
+}
+
+.vkey-black.active {
+    background-color: #ff6644 !important;
+    border-color: #ff5533;
+}
