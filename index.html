@@ -39,8 +39,8 @@
                 <option value="pad">Atmospheric Pad (Smooth Sine)</option>
                 <option value="retro">8-Bit Chiptune (Square Wave)</option>
             </select>
-            <label for="bpm">BPM:</label>
-            <input type="number" id="bpm" value="120" min="40" max="240">
+            <label for="input-bpm">BPM:</label>
+            <input type="number" id="input-bpm" value="120" min="40" max="240">
         </div>
         <div class="export-controls">
             <button id="btn-export-midi">📦 Exportar MIDI</button>
@@ -54,7 +54,9 @@
             <div id="grid-timeline" class="grid-timeline"></div>
         </section>
 
-        <section id="interactive-piano" class="interactive-piano"></section>
+        <section id="interactive-piano" class="interactive-piano">
+            <div id="keyboard-vkey-container"></div>
+        </section>
     </main>
 
     <script type="module" src="js/app.js"></script>
