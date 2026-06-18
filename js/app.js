@@ -1,6 +1,7 @@
 import { initMidi } from './midiEngine.js';
 import { initAudio } from './audioEngine.js';
 import { initPianoRoll } from './pianoRoll.js';
+import { buildInteractiveKeyboard } from './midiEngine.js';
 import { initPlayback } from './playbackEngine.js';
 import { exportToMidi, exportToAbc } from './exporters.js';
 
@@ -10,6 +11,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     initMidi(audio);
     const pianoRoll = initPianoRoll();
     const playback = initPlayback();
+
+    // Inicializar el piano interactivo inferior
+    buildInteractiveKeyboard();
 
     // Variables de control de la sesión
     let currentBpm = 120; 
@@ -81,9 +85,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // 5. OBSERVAR CAMBIOS EN LA GRILLA (Modo en vivo)
-    // Apuntamos a la caja contenedora del Piano Roll para escuchar cuando el mouse suelta una nota
-    const containerTimeline = document.querySelector('.grid-timeline');
+    // 5. OBSERVAR CAMBIOS EN LA GRILLA (Modo en vivo - CORREGIDO A ID)
+    const containerTimeline = document.getElementById('grid-timeline');
     if (containerTimeline) {
         ['mouseup', 'mouseleave'].forEach(eventType => {
             containerTimeline.addEventListener(eventType, () => {
@@ -118,39 +121,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ==========================================
-    // CONTROL DEL SELECTOR DE INSTRUMENTOS (REPARADO)
+    // CONTROL DEL SELECTOR DE INSTRUMENTOS
     // ==========================================
-
     const selectInstrument = document.getElementById('select-instrument');
-    
     if (selectInstrument) {
         selectInstrument.addEventListener('change', async (e) => {
-            // 1. Asegurar que el contexto de audio esté despierto al modular
             if (Tone.context.state !== 'running') {
                 await Tone.start();
             }
-            
-            // 2. Aplicar el cambio en el motor de audio
             audio.setInstrument(e.target.value);
-            
-            // 3. LA CLAVE: Quitamos el foco del selector para devolvérselo al teclado de la PC
             selectInstrument.blur();
         });
     }
 
+    // ==========================================
+    // CONTROLES DE LOS SLIDERS DE MODULACIÓN
+    // ==========================================
     const sliderCutoff = document.getElementById('slider-cutoff');
     const sliderAttack = document.getElementById('slider-attack');
     
-    // ==========================================
-    // CONTROLES DE LOS SLIDERS DE MODULACIÓN (REPARADOS)
-    // ==========================================
     if (sliderCutoff) {
         sliderCutoff.addEventListener('input', (e) => {
             const freq = parseInt(e.target.value);
             audio.setCutoff(freq);
         });
-        
-        // Cuando el usuario suelta la perilla, liberamos el foco
         sliderCutoff.addEventListener('change', () => {
             sliderCutoff.blur();
         });
@@ -161,8 +155,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             const attackValue = parseFloat(e.target.value);
             audio.setAttack(attackValue);
         });
-        
-        // Cuando el usuario suelta la perilla, liberamos el foco
         sliderAttack.addEventListener('change', () => {
             sliderAttack.blur();
         });
@@ -170,7 +162,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 /**
- * Mueve la línea del playhead en la capa flotante de notas (UNA SOLA DECLARACIÓN)
+ * Mueve la línea del playhead en la capa flotante de notas
  */
 function movePlayheadUI(activeColumn, totalColumns) {
     let playhead = document.getElementById('piano-playhead');
