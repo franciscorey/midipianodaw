@@ -107,40 +107,58 @@ function buildVerticalPiano(container) {
  * Genera la grilla de tiempo con capas separadas y alturas fijas de 24px
  */
 function buildGrid(container) {
+    // 1. Limpiar el contenedor por seguridad
     container.innerHTML = '';
     container.style.position = 'relative';
 
+    // Rango de notas (37 filas en total para 3 octavas)
     const totalRows = CONFIG.startNote - CONFIG.endNote + 1;
-    
-    // Simplificamos: Quitamos los estilos inline rígidos de las columnas
-    // para que el CSS controle el ancho exacto de 2560px (64 col x 40px)
-    const gridStyles = `
-        display: grid;
-        grid-template-rows: repeat(${totalRows}, 24px); 
-        position: relative;
-    `;
+    const totalColumns = 64; // 4 compases x 16 subdivisiones
 
-    // 1. CREAR CAPA DE FONDO
+    // 2. CREAR LA CAPA DE FONDO (Las celdas grises con bordes)
     const bgLayer = document.createElement('div');
     bgLayer.id = 'grid-background';
-    // Dejamos que el CSS ponga las columnas y el ancho fijo
+    
+    // Inyectamos las celdas en el bucle
+    for (let r = 0; r < totalRows; r++) {
+        for (let c = 0; c < totalColumns; c++) {
+            const cell = document.createElement('div');
+            cell.className = 'grid-cell';
+            
+            // Guardamos la info de la nota en la celda para los clicks
+            const noteNumber = CONFIG.startNote - r;
+            cell.dataset.note = noteNumber;
+            cell.dataset.column = c;
 
-    // ... (aquí va tu bucle for existente de filas y columnas que crea las celdas) ...
-    // Asegúrate de que las celdas se agreguen al bgLayer como ya lo hacías.
+            // Al hacer click en una celda vacía, agregamos una nota
+            cell.addEventListener('mousedown', () => {
+                addNote(noteNumber, c, 2); // Duración estándar de 2 semicorcheas
+            });
 
-    // 2. CREAR CAPA DE NOTAS
+            bgLayer.appendChild(cell);
+        }
+    }
+
+    // 3. CREAR LA CAPA DE NOTAS (El lienzo transparente donde flotan los bloques naranjos)
     const notesLayer = document.createElement('div');
     notesLayer.id = 'grid-notes-layer';
     notesLayer.style.cssText = `
         position: absolute;
         top: 0;
         left: 0;
+        width: 100%;
         height: 100%;
-        pointer-events: none;
+        pointer-events: none; /* Crucial para poder hacer click a través de ella */
     `;
 
+    // 4. INSERCIÓN EN EL ORDEN CORRECTO
     container.appendChild(bgLayer);
     container.appendChild(notesLayer);
+
+    // Si ya habían notas guardadas en la sesión, las dibujamos de inmediato
+    if (typeof drawNotes === 'function') {
+        drawNotes();
+    }
 }
 
 /**
