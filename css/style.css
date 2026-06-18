@@ -176,7 +176,7 @@ body {
 }
 
 /* 1. La Grilla de Tiempo (Contenedor padre que tiene el scroll horizontal) */
-.grid-timeline {
+#grid-timeline {
     position: relative;
     flex-grow: 1;
     background-color: #202024;
